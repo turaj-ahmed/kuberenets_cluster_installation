@@ -1,0 +1,51 @@
+k8admin@master:~$ kubectl get nodes
+NAME            STATUS   ROLES           AGE   VERSION
+master.local    Ready    control-plane   20h   v1.28.15
+worker1.local   Ready    <none>          17h   v1.28.15
+worker2.local   Ready    <none>          55m   v1.28.15
+worker3.local   Ready    <none>          47s   v1.28.15
+k8admin@master:~$ kubectl cluster-info
+Kubernetes control plane is running at https://leno.k8s.local:6443
+CoreDNS is running at https://leno.k8s.local:6443/api/v1/namespaces/kube-system/services/kube-dns:dns/proxy
+
+To further debug and diagnose cluster problems, use 'kubectl cluster-info dump'.
+k8admin@master:~$ kubectl get namespaces
+NAME              STATUS   AGE
+default           Active   20h
+kube-node-lease   Active   20h
+kube-public       Active   20h
+kube-system       Active   20h
+k8admin@master:~$ kubectl get pods -n kube-system
+NAME                                       READY   STATUS    RESTARTS      AGE
+calico-kube-controllers-658d97c59c-wdvdl   1/1     Running   0             20h
+calico-node-7flnr                          1/1     Running   0             2m53s
+calico-node-tnzz6                          1/1     Running   0             17h
+calico-node-vsh9k                          1/1     Running   0             57m
+calico-node-xdwxc                          1/1     Running   0             20h
+coredns-5dd5756b68-gmxzn                   1/1     Running   0             20h
+coredns-5dd5756b68-vvdm2                   1/1     Running   0             20h
+etcd-master.local                          1/1     Running   2             20h
+kube-apiserver-master.local                1/1     Running   2             20h
+kube-controller-manager-master.local       1/1     Running   5 (15h ago)   20h
+kube-proxy-8mtql                           1/1     Running   0             17h
+kube-proxy-96k44                           1/1     Running   0             57m
+kube-proxy-p5fbr                           1/1     Running   0             20h
+kube-proxy-w72kw                           1/1     Running   0             2m53s
+kube-scheduler-master.local                1/1     Running   5 (15h ago)   20h
+k8admin@master:~$ kubectl get pods -n kube-system
+NAME                                       READY   STATUS    RESTARTS      AGE
+calico-kube-controllers-658d97c59c-wdvdl   1/1     Running   0             20h
+calico-node-7flnr                          1/1     Running   0             3m35s
+calico-node-tnzz6                          1/1     Running   0             17h
+calico-node-vsh9k                          1/1     Running   0             58m
+calico-node-xdwxc                          1/1     Running   0             20h
+coredns-5dd5756b68-gmxzn                   1/1     Running   0             20h
+coredns-5dd5756b68-vvdm2                   1/1     Running   0             20h
+etcd-master.local                          1/1     Running   2             20h
+kube-apiserver-master.local                1/1     Running   2             20h
+kube-controller-manager-master.local       1/1     Running   5 (15h ago)   20h
+kube-proxy-8mtql                           1/1     Running   0             17h
+kube-proxy-96k44                           1/1     Running   0             58m
+kube-proxy-p5fbr                           1/1     Running   0             20h
+kube-proxy-w72kw                           1/1     Running   0             3m35s
+kube-scheduler-master.local                1/1     Running   5 (15h ago)   20h

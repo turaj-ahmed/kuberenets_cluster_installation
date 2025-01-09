@@ -1,0 +1,113 @@
+
+Kubernetes Lab Setup Guide
+
+1. Host OS Installation:
+   - Install Ubuntu Server 22.04 LTS on each machine.
+   - Select "Ubuntu Server (minimized)" option during installation.
+   - Optionally, install MicroK8s and SSH server for easier management.
+
+
+
+2. #Kubernetes Common Setup for all  Nodes
+
+# Set hostname for each machine
+sudo hostnamectl set-hostname "{your-hostname}.local"
+exec bash
+
+# Apply any updates and reboot (*)
+sudo apt update
+sudo apt upgrade
+sudo reboot
+
+# Disable swap for better performance
+sudo swapoff -a
+sudo sed -i '/ swap / s/^\(.*\)$/#\1/g' /etc/fstab
+
+# Add settings to containerd.conf
+# overlay (for using overlayfs), 
+# br_netfilter (for ipvlan, macvlan, external SNAT of service IPs)
+sudo tee /etc/modules-load.d/containerd.conf <<EOF
+overlay
+br_netfilter
+EOF
+sudo modprobe overlay
+sudo modprobe br_netfilter
+
+# Add settings to kubernetes.conf
+# Allow IPv4, IPv6 and IP forwarding
+sudo tee /etc/sysctl.d/kubernetes.conf <<EOF
+net.bridge.bridge-nf-call-ip6tables = 1
+net.bridge.bridge-nf-call-iptables = 1
+net.ipv4.ip_forward = 1
+EOF
+
+# Reload updated config
+sudo sysctl --system
+
+# Install required tools and CA certificates
+sudo apt install -y curl gnupg2 software-properties-common apt-transport-https ca-certificates
+
+# Add Docker repository
+sudo curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmour -o /etc/apt/trusted.gpg.d/docker.gpg
+sudo add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable"
+
+# Then, install containerd
+sudo apt update
+sudo apt install -y containerd.io
+containerd config default | sudo tee /etc/containerd/config.toml >/dev/null 2>&1
+sudo sed -i 's/SystemdCgroup \= false/SystemdCgroup \= true/g' /etc/containerd/config.toml
+sudo systemctl restart containerd
+sudo systemctl enable containerd
+
+# Add Kubernetes repository
+curl -s https://packages.cloud.google.com/apt/doc/apt-key.gpg | sudo gpg --dearmour -o /etc/apt/trusted.gpg.d/kubernetes-xenial.gpg
+sudo apt-add-repository "deb http://apt.kubernetes.io/ kubernetes-xenial main"
+
+# Then, install Kubernetes components
+sudo apt update
+sudo apt install -y kubelet kubeadm kubectl
+sudo apt-mark hold kubelet kubeadm kubectl
+
+3. Change hosts file entries
+
+# k8s cluster nodes
+
+192.168.239.134 leno.k8s.local
+192.168.239.141 worker1.local worker1
+192.168.239.139 worker2.local worker2
+192.168.239.139 worker3.local worker3
+
+4. k8s cluster nodes
+sudo apt-get install docker-ce
+
+5. Open TCP port for K8s API communication (default 6443)
+# Open TCP port for K8s API (default 6443)
+sudo iptables -A INPUT -p tcp --dport 6443 -j ACCEPT
+
+---------------------------------------------------------------------------------------------------------------------------------------
+Master Setup
+
+# only for master node
+sudo kubeadm config images pull
+sudo reboot
+
+# note: '--ignore-preflight-errors=all' is added 
+# due to initialization stops with some minor errors
+sudo kubeadm init --control-plane-endpoint=leno.k8s.local --ignore-preflight-errors=all
+
+
+
+# Copy /etc/kubernetes/admin.conf for using the node 
+# as a Non-root user 
+# Create .kube/config
+mkdir -p $HOME/.kube
+sudo cp -i /etc/kubernetes/admin.conf $HOME/.kube/config
+sudo chown $(id -u):$(id -g) $HOME/.kube/config
+
+# Install Calico Network Plugin
+# Currently (v3.25.0) is the latest, 
+kubectl apply -f https://raw.githubusercontent.com/projectcalico/calico/v3.25.0/manifests/calico.yaml
+
+6. Connect the Master Node with Worker Nodes
+sudo kubeadm join leno.k8s.local:6443 --token z1fqiy.787f5bg1g1eamarb \
+        --discovery-token-ca-cert-hash sha256:f02fab925e9b89ca1d68f96f903eb1614e23b236615fc11f60c202d3c91b94de
